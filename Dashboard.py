@@ -147,7 +147,7 @@ app.layout = html.Div([
                         )
                     }
                 ),
-                html.H2("High and Low BTC price",style={"textAlign": "center"}),
+                html.H2("High and Low ETH price",style={"textAlign": "center"}),
                 dcc.Graph(
                     id="HighAndLow Data",
                     figure={
@@ -223,7 +223,7 @@ app.layout = html.Div([
                         )
                     }
                 ),
-                html.H2("High and Low BTC price",style={"textAlign": "center"}),
+                html.H2("High and Low ADA price",style={"textAlign": "center"}),
                 dcc.Graph(
                     id="HighAndLow Data",
                     figure={
