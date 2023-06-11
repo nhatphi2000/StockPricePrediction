@@ -8,40 +8,14 @@ from keras.models import Sequential
 from keras.models import load_model
 from keras.layers import LSTM,Dropout,Dense
 from sklearn.preprocessing import MinMaxScaler
+from TrainData import preprocess_data
 import numpy as np
 app = dash.Dash()
 server = app.server
-scaler=MinMaxScaler(feature_range=(0,1))
-df_nse = pd.read_csv("./BTC-USD.csv")
-df_nse["Date"]=pd.to_datetime(df_nse.Date,format="%Y-%m-%d")
-df_nse.index=df_nse['Date']
-data=df_nse.sort_index(ascending=True,axis=0)
-new_data=pd.DataFrame(index=range(0,len(df_nse)),columns=['Date','Close'])
-for i in range(0,len(data)):
-    new_data["Date"][i]=data['Date'][i]
-    new_data["Close"][i]=data["Close"][i]
-print(new_data.head())
-new_data.index=new_data.Date
-new_data.drop("Date",axis=1,inplace=True)
-dataset=new_data.values
-train=dataset[0:1100,:]
-valid=dataset[1100:,:]
-scaler=MinMaxScaler(feature_range=(0,1))
-scaled_data=scaler.fit_transform(dataset)
-model=load_model("saved_model.h5")
-inputs=new_data[len(new_data)-len(valid)-60:].values
-inputs=inputs.reshape(-1,1)
-inputs=scaler.transform(inputs)
-X_test=[]
-for i in range(60,inputs.shape[0]):
-    X_test.append(inputs[i-60:i,0])
-X_test=np.array(X_test)
-X_test=np.reshape(X_test,(X_test.shape[0],X_test.shape[1],1))
-closing_price=model.predict(X_test)
-closing_price=scaler.inverse_transform(closing_price)
-train=new_data[:1100]
-valid=new_data[1100:]
-valid['Predictions']=closing_price
+
+BTC_train, BTC_valid, BTC_df_nse = preprocess_data("./BTC-USD.csv") #lay train data cua BTC
+ETH_train, ETH_valid, ETH_df_nse = preprocess_data("./ETH-USD.csv") #lay train data cua ETH
+ADA_train, ADA_valid, ADA_df_nse = preprocess_data("./ADA-USD.csv") #lay train data cua ADA
 
 
 app.layout = html.Div([
@@ -58,8 +32,8 @@ app.layout = html.Div([
                     figure={
                         "data":[
                             go.Scatter(
-                                x=train.index,
-                                y=train["Close"],
+                                x=BTC_train.index,
+                                y=BTC_train["Close"],
                                 mode='markers'
                             )
                         ],
@@ -70,21 +44,21 @@ app.layout = html.Div([
                         )
                     }
                 ),
-                html.H2("LSTM Predicted BTC closing price and Compare",style={"textAlign": "center"}),
+                html.H2("LSTM Predicted BTC closing price and compare",style={"textAlign": "center"}),
                 dcc.Graph(
                     id="Predicted Data",
                     figure={
                         "data":[
                             go.Scatter(
-                                x=valid.index,
-                                y=valid["Close"],
+                                x=BTC_valid.index,
+                                y=BTC_valid["Close"],
                                 mode='lines+markers',
                                 line=dict(color="#0000ff"),
                                 name="Close Price"
                             ),
                             go.Scatter(
-                                x=valid.index,
-                                y=valid["Predictions"],
+                                x=BTC_valid.index,
+                                y=BTC_valid["Predictions"],
                                 mode='lines+markers',
                                 line=dict(color="#ffe476"),
                                 name="Predictions Price"
@@ -103,15 +77,167 @@ app.layout = html.Div([
                     figure={
                         "data":[
                             go.Scatter(
-                                x=df_nse.index,
-                                y=df_nse["High"],
+                                x=BTC_df_nse.index,
+                                y=BTC_df_nse["High"],
                                 mode='lines+markers',
                                 line=dict(color="#0000ff"),
                                 name="High Price"
                             ),
                             go.Scatter(
-                                x=df_nse.index,
-                                y=df_nse["Low"],
+                                x=BTC_df_nse.index,
+                                y=BTC_df_nse["Low"],
+                                mode='lines+markers',
+                                line=dict(color="#ffe476"),
+                                name="Low Price"
+                            )
+                        ],
+                        "layout":go.Layout(
+                            title='Scatter Plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate (USD)'}
+                        )
+                    }
+                ),          
+            ])                
+        ]),
+        dcc.Tab(label='Ethereum USD Stock Data',children=[
+            html.Div([
+                html.H2("Actual ETH closing price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Actual Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=ETH_train.index,
+                                y=ETH_train["Close"],
+                                mode='markers'
+                            )
+                        ],
+                        "layout":go.Layout(
+                            title='Scatter Plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate (USD)'}
+                        )
+                    }
+                ),
+                html.H2("LSTM Predicted ETH closing price and compare",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Predicted Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=ETH_valid.index,
+                                y=ETH_valid["Close"],
+                                mode='lines+markers',
+                                line=dict(color="#0000ff"),
+                                name="Close Price"
+                            ),
+                            go.Scatter(
+                                x=ETH_valid.index,
+                                y=ETH_valid["Predictions"],
+                                mode='lines+markers',
+                                line=dict(color="#ffe476"),
+                                name="Predictions Price"
+                            )
+                        ],
+                        "layout":go.Layout(
+                            title='Scatter Plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate (USD)'}
+                        )
+                    }
+                ),
+                html.H2("High and Low BTC price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="HighAndLow Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=ETH_df_nse.index,
+                                y=ETH_df_nse["High"],
+                                mode='lines+markers',
+                                line=dict(color="#0000ff"),
+                                name="High Price"
+                            ),
+                            go.Scatter(
+                                x=ETH_df_nse.index,
+                                y=ETH_df_nse["Low"],
+                                mode='lines+markers',
+                                line=dict(color="#ffe476"),
+                                name="Low Price"
+                            )
+                        ],
+                        "layout":go.Layout(
+                            title='Scatter Plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate (USD)'}
+                        )
+                    }
+                ),          
+            ])                
+        ]),
+        dcc.Tab(label='Cardano USD Stock Data',children=[
+            html.Div([
+                html.H2("Actual ADA closing price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Actual Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=ADA_train.index,
+                                y=ADA_train["Close"],
+                                mode='markers'
+                            )
+                        ],
+                        "layout":go.Layout(
+                            title='Scatter Plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate (USD)'}
+                        )
+                    }
+                ),
+                html.H2("LSTM Predicted ADA closing price and compare",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="Predicted Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=ADA_valid.index,
+                                y=ADA_valid["Close"],
+                                mode='lines+markers',
+                                line=dict(color="#0000ff"),
+                                name="Close Price"
+                            ),
+                            go.Scatter(
+                                x=ADA_valid.index,
+                                y=ADA_valid["Predictions"],
+                                mode='lines+markers',
+                                line=dict(color="#ffe476"),
+                                name="Predictions Price"
+                            )
+                        ],
+                        "layout":go.Layout(
+                            title='Scatter Plot',
+                            xaxis={'title':'Date'},
+                            yaxis={'title':'Closing Rate (USD)'}
+                        )
+                    }
+                ),
+                html.H2("High and Low BTC price",style={"textAlign": "center"}),
+                dcc.Graph(
+                    id="HighAndLow Data",
+                    figure={
+                        "data":[
+                            go.Scatter(
+                                x=ADA_df_nse.index,
+                                y=ADA_df_nse["High"],
+                                mode='lines+markers',
+                                line=dict(color="#0000ff"),
+                                name="High Price"
+                            ),
+                            go.Scatter(
+                                x=ADA_df_nse.index,
+                                y=ADA_df_nse["Low"],
                                 mode='lines+markers',
                                 line=dict(color="#ffe476"),
                                 name="Low Price"
